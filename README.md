@@ -2,7 +2,7 @@
 
 
 ### Overview
-This project is a simple chat application that demonstrates real-time communication using WebSockets.
+This project is a web socket chat application that demonstrates real-time communication using Spring.
 A simplified front end is provided to facilitate testing and to demonstrate the application's capabilities and to easily test every functionality.
 
  #### Front End : http://localhost:8080
