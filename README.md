@@ -17,7 +17,7 @@ A simplified front end is provided to facilitate testing and to demonstrate the 
 
 ### Chat Room Interaction
 1. **Create a Chat Room:** After signing in, use the 'Create Chat Room' section to create a new chat room by specifying its name and maximum size.
-2. **Join a Chat Room:** Use the 'Join/Leave Chat Room' dropdown to select a chat room and click 'Join'.
+2. **Join/Leave a Chat Room:** Use the 'Join/Leave Chat Room' dropdown to select a chat room and click 'Join' / 'Leave'.
 3. **Send Messages:** Once inside a chat room, use the 'Chat Messages' section to type and send messages.
 
 ### File Attachment
