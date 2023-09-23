@@ -1,265 +1,324 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Socket Chat Application Test </title>
-  <script src="https://cdn.jsdelivr.net/sockjs/1/sockjs.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <meta charset="UTF-8">
+    <title>Chat Application Test </title>
+    <script src="https://cdn.jsdelivr.net/sockjs/1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 
-  <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
 <div class="container">
-<h1>Chat Application</h1>
-<div>
-  <textarea id="messages" rows="10" cols="30"></textarea>
-</div>
+    <h1>Chat Application</h1>
+
+    <!-- User Registration -->
+
+    <div id="user-registration" class="page">
+        <h2>User Registration</h2>
+        <input type="text" id="registration-username" placeholder="Username">
+        <input type="password" id="registration-password" placeholder="Password">
+        <button id="register-user">Register</button>
+        <div id="registration-error" class="error-message"></div>
+
+        <p>Already have an account? <a href="#" id="open-signin-from-registration">Sign In</a></p>
+
+    </div>
+
+    <!-- User Sign-In -->
+    <div id="user-signin" class="page">
+        <h2>User Sign-In</h2>
+        <input type="text" id="signin-username" name="username" placeholder="Username">
+        <input type="password" id="signin-password" placeholder="Password">
+        <button id="sign-in">Sign In</button>
+        <div id="signin-error" class="error-message"></div>
+        <p>Don't have an account? <a href="#" id="open-registration-from-signin">Register</a></p>
+
+    </div>
+
+    <div id="chat-room" class="page">
+
+        <div id="user-actions">
+            <h2>Join/Leave Chat Room</h2>
+            <select id="chat-rooms-list"></select>
+            <button id="join-chat-room">Join</button>
+            <button id="leave-chat-room">Leave</button>
+            <div id="chatroom-action-error" class="error-message"></div>
+
+        </div>
 
 
-<!-- User Registration -->
-<div id="user-registration">
-  <h2>User Registration</h2>
-  <input type="text" id="registration-username" placeholder="Username">
-  <input type="password" id="registration-password" placeholder="Password">
-  <button id="register-user">Register</button>
-  <div id="registration-error" class="error-message"></div>
-</div>
+        <h2>Create Chat Room</h2>
+        <input type="text" id="chat-room-name" placeholder="Chat Room Name">
+        <input type="text" id="chat-room-size" placeholder="Chat Room Maximum Size">
+        <button id="create-chat-room">Create</button>
+        <div id="chatroom-creation-error" class="error-message"></div>
+        <button id="open-signin-from-chat-room">Sign Out</button>
 
-<!-- User Sign-In -->
-<div id="user-signin">
-  <h2>User Sign-In</h2>
-  <input type="text" id="signin-username"  name="username" placeholder="Username">
-  <input type="password" id="signin-password" placeholder="Password">
-  <button id="sign-in">Sign In</button>
-  <div id="signin-error" class="error-message"></div>
-</div>
+    </div>
 
-<div id="chat-room">
-  <h2>Create Chat Room</h2>
-  <input type="text" id="chat-room-name" placeholder="Chat Room Name">
-  <input type="text" id="chat-room-size" placeholder="Chat Room Maximum Size">
-  <button id="create-chat-room">Create</button>
-  <div id="chatroom-creation-error" class="error-message"></div>
-</div>
 
-<div id="user-actions">
-  <h2>Join/Leave Chat Room</h2>
-  <select id="chat-rooms-list"></select>
-  <button id="join-chat-room">Join</button>
-  <button id="leave-chat-room">Leave</button>
-  <div id="chatroom-action-error" class="error-message"></div>
-</div>
+    <div id="chat-messages" class="page">
+        <h2>Chat Messages</h2>
+        <!-- Chat Room Display -->
+        <div id="chat-display">
+            <h2>Welcome, <span id="user-name-placeholder"></span>!</h2>
+            <p>You are in the chat room: <span id="chat-room-name-placeholder"></span></p>
+        </div>
+        <div>
+            <textarea id="messages" rows="10" cols="30" readonly></textarea>
+        </div>
 
-<div id="chat-messages">
-  <h2>Chat Messages</h2>
-  <ul id="message-list"></ul>
-  <input type="text" id="message-input" placeholder="Type your message">
-  <input type="file" id="attachment-input"  accept="image/*,video/*,.pdf" />
+        <ul id="message-list"></ul>
+        <input type="text" id="message-input" placeholder="Type your message">
+        <input type="file" id="attachment-input" accept="image/*,video/*,.pdf"/>
 
-  <button id="send-message">Send</button>
-  <div id="message-error" class="error-message"></div>
-</div>
+        <button id="send-message">Send</button>
+        <div id="message-error" class="error-message"></div>
+        <button id="open-chatrooms-from-chatroom">Back</button>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-  $(document).ready(function() {
-    var signedInUser = null; // Store signed-in user information
-    var stompClient = null;
-    var chatRoomSubscriptions = {};
-    var socket = new SockJS('/chat');
-    stompClient = Stomp.over(socket);
-    stompClient.connect({}, function(frame) {
-      console.log('Connected: ' + frame);
-      // stompClient.subscribe('/topic/messages', function(chatMessage) {
-      //   showGreeting(JSON.parse(chatMessage.body).content);
-      // });
+    </div>
 
-    });
-    $("#sign-in").click(function() {
-      var username = $("#signin-username").val();
-      var password = $("#signin-password").val();
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Function to show a specific page by ID and hide others
+            function showPage(pageId) {
+                $('.page').hide(); // Hide all pages
+                $('#' + pageId).show(); // Show the specified page
+            }
 
-      // Include username and password as query parameters
-      var url = "/api/users/signin?username=" + username + "&password=" + password;
+            // Show the registration page by default on page load
+            showPage('user-registration');
 
-      $.ajax({
-        url: url,
-        type: "POST",
-        contentType: "application/json",
-        success: function(user) {
+            function showSignIn() {
+                showPage('user-signin');
+            }
+
+            function showChatRoom() {
+                showPage('chat-room');
+                showChatDisplay();
+            }
+
+            function showChatMessage() {
+                showPage('chat-messages');
+                // showPage('chat-display');
+            }
+
+            function showRegistration() {
+                showPage('user-registration');
+            }
+
+            $('#open-chatrooms-from-chatroom').click(showChatRoom);
+            $('#open-signin-from-registration').click(showSignIn);
+            $('#open-signin-from-chat-room').click(showSignIn);
+            $('#open-registration-from-signin').click(showRegistration);
+
+            var signedInUser = null; // Store signed-in user information
+            var stompClient = null;
+            var chatRoomSubscriptions = {};
+            var socket = new SockJS('/chat');
+            stompClient = Stomp.over(socket);
+            stompClient.connect({}, function (frame) {
+                console.log('Connected: ' + frame);
+                // stompClient.subscribe('/topic/messages', function(chatMessage) {
+                //   showGreeting(JSON.parse(chatMessage.body).content);
+                // });
+
+            });
+            $("#sign-in").click(function () {
+                var username = $("#signin-username").val();
+                var password = $("#signin-password").val();
+
+                // Include username and password as query parameters
+                var url = "/api/users/signin?username=" + username + "&password=" + password;
+
+                $.ajax({
+                    url: url,
+                    type: "POST",
+                    contentType: "application/json",
+                    success: function (user) {
 // After sign-in, store the signed-in user information
-          signedInUser = user;
-          // After sign-in, you can handle any desired logic (e.g., load chat rooms)
-          alert("Sign-in successful!");
-          loadChatRooms();
-        },
-        error: function(xhr) {
-          $("#signin-error").text(xhr.responseText);
-        }
-      });
-    });
+                        signedInUser = user;
+                        // After sign-in, you can handle any desired logic (e.g., load chat rooms)
+                        alert("Sign-in successful!");
+                        loadChatRooms();
+                        showPage('chat-room');
+                        $('#user-name-placeholder').text(username);
+                    },
+                    error: function (xhr) {
+                        $("#signin-error").text(xhr.responseText);
+                    }
+                });
+            });
 
-    function joinChatRoom(chatRoomId) {
-      // Subscribe to the chat room's message topic
-      console.log('Join chat room0: ' + chatRoomId);
-      // Store the subscription in the chatRoomSubscriptions object with the chat room ID as the key
-      chatRoomSubscriptions[chatRoomId] = stompClient.subscribe('/topic/chatroom-' + chatRoomId, function(chatMessage) {
-        showGreeting(JSON.parse(chatMessage.body).content);
-        console.log('Join chat room suub: ' + chatRoomId);
-      });
-    }
+            function joinChatRoom(chatRoomId, chatRoomName) {
+                // Subscribe to the chat room's message topic
+                console.log('Join chat room: ' + chatRoomId);
+                $('#chat-room-name-placeholder').text(chatRoomName);
+                showChatMessage();
+                // Store the subscription in the chatRoomSubscriptions object with the chat room ID as the key
+                chatRoomSubscriptions[chatRoomId] = stompClient.subscribe('/topic/chatroom-' + chatRoomId, function (chatMessage) {
+                    showGreeting(JSON.parse(chatMessage.body).content);
+                    console.log('Join chat room sub: ' + chatRoomId);
+                });
+            }
 
-    function leaveChatRoom(chatRoomId) {
-      console.log('Leaving chat room suub: ' + chatRoomId);
-      var chatRoomSubscription = chatRoomSubscriptions[chatRoomId];
-      if (chatRoomSubscription) {
-        // The subscription exists, you can perform actions on it
-        chatRoomSubscription.unsubscribe();
-      } else {
-        // The subscription doesn't exist
-        console.log('Subscription does not exist for chat room: ' + chatRoomId);
-      }
-    }
-    // Join a chat room
-    $("#join-chat-room").click(function() {
-      var chatRoomId = $("#chat-rooms-list").val();
-      var userId = signedInUser.id; // Replace with the authenticated user's ID
-      // Send a request to join the selected chat room to the server
-      console.log('Join chat room: ' + chatRoomId);
-      stompClient.send("/app/joinRoom", {}, JSON.stringify({ 'userId': userId, 'roomId': chatRoomId }));
-      joinChatRoom(chatRoomId);
-    });
+            function leaveChatRoom(chatRoomId) {
+                console.log('Leaving chat room suub: ' + chatRoomId);
+                var chatRoomSubscription = chatRoomSubscriptions[chatRoomId];
+                if (chatRoomSubscription) {
+                    // The subscription exists, you can perform actions on it
+                    chatRoomSubscription.unsubscribe();
 
-    // Leave a chat room
-    $("#leave-chat-room").click(function() {
-      var chatRoomId = $("#chat-rooms-list").val();
-      var userId = signedInUser.id; // Replace with the authenticated user's ID
-      // Send a request to leave the selected chat room to the server
-      stompClient.send("/app/leaveRoom", {}, JSON.stringify({ 'userId': userId, 'roomId': chatRoomId }));
-      leaveChatRoom(chatRoomId);
-    });
+                } else {
+                    // The subscription doesn't exist
+                    console.log('Subscription does not exist for chat room: ' + chatRoomId);
+                }
+                showPage('chat-room');
+            }
 
-    // Function to load chat rooms into the dropdown list
-    function loadChatRooms() {
-      $.get("/api/chatrooms", function(data) {
-        console.log(data); // Log the data received from the API
-        $("#chat-rooms-list").empty();
-        data.forEach(function(chatRoom) {
-          $("#chat-rooms-list").append("<option value='" + chatRoom.id + "'>" + chatRoom.name + "</option>");
+            // Join a chat room
+            $("#join-chat-room").click(function () {
+                var chatRoomId = $("#chat-rooms-list").val();
+                var userId = signedInUser.id; // Replace with the authenticated user's ID
+                // Send a request to join the selected chat room to the server
+                console.log('Join chat room: ' + chatRoomId);
+                stompClient.send("/app/joinRoom", {}, JSON.stringify({'userId': userId, 'roomId': chatRoomId}));
+                joinChatRoom(chatRoomId, $("#chat-rooms-list option:selected").text());
+            });
+
+            // Leave a chat room
+            $("#leave-chat-room").click(function () {
+                var chatRoomId = $("#chat-rooms-list").val();
+                var userId = signedInUser.id; // Replace with the authenticated user's ID
+                // Send a request to leave the selected chat room to the server
+                stompClient.send("/app/leaveRoom", {}, JSON.stringify({'userId': userId, 'roomId': chatRoomId}));
+                leaveChatRoom(chatRoomId);
+            });
+
+            // Function to load chat rooms into the dropdown list
+            function loadChatRooms() {
+                $.get("/api/chatrooms", function (data) {
+                    console.log(data); // Log the data received from the API
+                    $("#chat-rooms-list").empty();
+                    data.forEach(function (chatRoom) {
+                        $("#chat-rooms-list").append("<option value='" + chatRoom.id + "'>" + chatRoom.name + "</option>");
+                    });
+                });
+            }
+
+
+            // Load chat rooms when the page loads
+            loadChatRooms();
+
+            // User Registration
+            $("#register-user").click(function () {
+                var username = $("#registration-username").val();
+                var password = $("#registration-password").val();
+                var data = JSON.stringify({username: username, password: password});
+                $.ajax({
+                    url: "/api/users/register",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: data,
+                    success: function () {
+                        // After registration, you can handle any desired logic (e.g., redirect to sign-in)
+                        alert("Registration successful! Please sign in.");
+                        showPage('user-signin');
+                    },
+                    error: function (xhr) {
+                        $("#registration-error").text(xhr.responseText);
+                    }
+                });
+            });
+
+            // User Sign-In
+
+
+            // Create a new chat room
+            $("#create-chat-room").click(function () {
+                var chatRoomName = $("#chat-room-name").val();
+                var chatRoomSize = $("#chat-room-size").val();
+
+
+                // Include username and password as query parameters
+                var url = "/api/chatrooms/create?chatRoomName=" + chatRoomName + "&chatRoomMaxSize=" + chatRoomSize;
+
+
+                $.ajax({
+                    url: url,
+                    type: "POST",
+                    contentType: "application/json",
+                    success: function () {
+                        // After creating the chat room, reload the chat rooms list
+                        loadChatRooms();
+                    },
+                    error: function (xhr) {
+                        $("#chatroom-creation-error").text(xhr.responseText);
+                    }
+                });
+            });
+            // Send a message
+            $("#send-message").click(function () {
+                var chatRoomId = $("#chat-rooms-list").val();
+                var messageContent = $("#message-input").val();
+                var userId = signedInUser.id;
+
+                // Check if a file is selected
+                var attachmentInput = document.getElementById('attachment-input');
+                if (attachmentInput.files.length > 0) {
+                    var file = attachmentInput.files[0];
+
+                    var formData = new FormData();
+                    formData.append('file', file);
+
+                    $.ajax({
+                        url: '/api/files/upload', // Replace with your file upload endpoint
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function (data) {
+                            console.log(data); // log the response to debug it
+                            console.log(data.fileUrl); // log the response to debug it
+                            console.log(data.url); // log the response to debug it
+                            // Get the file URL or identifier from the response
+                            var fileUrlOrIdentifier = data.fileUrl; // Replace with the actual key you receive from the server
+
+                            // Send the file URL or identifier over WebSocket
+                            var messageDto = {
+                                content: messageContent,
+                                chatRoomId: chatRoomId,
+                                userId: userId,
+                                fileUrl: fileUrlOrIdentifier // Including the file URL or identifier in the WebSocket message
+                            };
+
+                            stompClient.send("/app/send", {}, JSON.stringify(messageDto));
+                        },
+                        error: function (xhr) {
+                            console.error('File upload failed', xhr.responseText);
+                        }
+                    });
+                } else {
+                    // Construct a JSON message without fileUrl
+                    var messageDto = {
+                        content: messageContent,
+                        chatRoomId: chatRoomId,
+                        userId: userId
+                    };
+
+                    stompClient.send("/app/send", {}, JSON.stringify(messageDto));
+                }
+            });
+
+            function showGreeting(message) {
+                var response = document.getElementById('messages');
+                response.value += message + '\n';
+            }
         });
-      });
-    }
 
-
-
-    // Load chat rooms when the page loads
-    loadChatRooms();
-
-    // User Registration
-    $("#register-user").click(function() {
-      var username = $("#registration-username").val();
-      var password = $("#registration-password").val();
-      var data = JSON.stringify({ username: username, password: password });
-      $.ajax({
-        url: "/api/users/register",
-        type: "POST",
-        contentType: "application/json",
-        data: data,
-        success: function() {
-          // After registration, you can handle any desired logic (e.g., redirect to sign-in)
-          alert("Registration successful! Please sign in.");
-        },
-        error: function(xhr) {
-          $("#registration-error").text(xhr.responseText);
-        }
-      });
-    });
-
-    // User Sign-In
-
-
-    // Create a new chat room
-    $("#create-chat-room").click(function() {
-      var chatRoomName = $("#chat-room-name").val();
-      var chatRoomSize = $("#chat-room-size").val();
-
-
-      // Include username and password as query parameters
-      var url = "/api/chatrooms/create?chatRoomName=" + chatRoomName + "&chatRoomMaxSize=" + chatRoomSize;
-
-
-      $.ajax({
-        url: url,
-        type: "POST",
-        contentType: "application/json",
-        success: function() {
-          // After creating the chat room, reload the chat rooms list
-          loadChatRooms();
-        },
-        error: function(xhr) {
-          $("#chatroom-creation-error").text(xhr.responseText);
-        }
-      });
-    });
-    // Send a message
-    $("#send-message").click(function() {
-      var chatRoomId = $("#chat-rooms-list").val();
-      var messageContent = $("#message-input").val();
-      var userId =  signedInUser.id;
-
-      // Check if a file is selected
-      var attachmentInput = document.getElementById('attachment-input');
-      if (attachmentInput.files.length > 0) {
-        var file = attachmentInput.files[0];
-
-        var formData = new FormData();
-        formData.append('file', file);
-
-        $.ajax({
-          url: '/api/files/upload', // Replace with your file upload endpoint
-          type: 'POST',
-          data: formData,
-          processData: false,
-          contentType: false,
-          success: function(data) {
-            console.log(data); // log the response to debug it
-            console.log(data.fileUrl); // log the response to debug it
-            console.log(data.url); // log the response to debug it
-            // Get the file URL or identifier from the response
-            var fileUrlOrIdentifier = data.fileUrl; // Replace with the actual key you receive from the server
-
-            // Send the file URL or identifier over WebSocket
-            var messageDto = {
-              content: messageContent,
-              chatRoomId: chatRoomId,
-              userId: userId,
-              fileUrl: fileUrlOrIdentifier // Including the file URL or identifier in the WebSocket message
-            };
-
-            stompClient.send("/app/send", {}, JSON.stringify(messageDto));
-          },
-          error: function(xhr) {
-            console.error('File upload failed', xhr.responseText);
-          }
-        });
-      } else {
-        // Construct a JSON message without fileUrl
-        var messageDto = {
-          content: messageContent,
-          chatRoomId: chatRoomId,
-          userId: userId
-        };
-
-        stompClient.send("/app/send", {}, JSON.stringify(messageDto));
-      }
-    });
-    function showGreeting(message) {
-      var response = document.getElementById('messages');
-      response.value += message + '\n';
-    }
-  });
-
-</script>
+    </script>
 </div>
 </body>
 </html>
